@@ -1,0 +1,103 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+import os
+import yaml
+
+DEFAULT_VERSION = 5.4
+
+available_extensions = [
+    'bcmath', 'bz2', 'calendar', 'ctype', 'curl', 'dba', 'dom', 'enchant', 'exif',
+    'fileinfo', 'filter', 'ftp', 'gd', 'gettext', 'gmp', 'hash', 'iconv', 'imap',
+    'interbase', 'intl', 'json', 'ldap', 'mbstring', 'mcrypt', 'mssql', 'mysql',
+    'mysqli', 'oci8', 'odbc', 'pcntl', 'pdo', 'pdo_dblib', 'pdo_firebird',
+    'pdo_mysql', 'pdo_oci', 'pdo_odbc', 'pdo_pgsql', 'pdo_sqlite', 'pgsql', 'phar',
+    'posix', 'pspell', 'readline', 'recode', 'reflection', 'session', 'shmop',
+    'simplexml', 'snmp', 'soap', 'sockets', 'spl', 'standard', 'sybase_ct',
+    'sysvmsg', 'sysvsem', 'sysvshm', 'tidy', 'tokenizer', 'wddx', 'xml',
+    'xmlreader', 'xmlrpc', 'xmlwriter', 'xsl', 'zip',
+]
+
+
+def travis_contents():
+    with open('{0}/.travis.yml'.format(os.getcwd())) as f:
+        return f.read()
+
+    raise Exception('Unable to read travis file')
+
+
+def main():
+    """
+    Shits out a simple dockerfile for cakephp
+    projects based upon a .travis.yml
+    """
+    extensions = os.getenv('EXTENSIONS', 'curl,intl,mbstring,mysql,redis,xdebug').split(',')
+    docker_contents = []
+    contents = travis_contents()
+    data = yaml.safe_load(contents)
+
+    # set the version
+    php_versions = data.get('php', [DEFAULT_VERSION])
+    php_version = php_versions[0]
+    docker_contents.append('FROM php:{0}'.format(php_version))
+
+    # ensure all the php shit exists
+    docker_contents.append('ENV DEBIAN_FRONTEND=noninteractive LC_ALL=C DOCKER=1')  # LC_ALL=en_US.UTF-8
+    docker_contents.append('RUN apt-get update')
+    docker_contents.append('RUN apt-get -qq install -qq -y php5-cli php-pear')
+    docker_contents.append('RUN apt-get -qq install -qq -y git-core')  # for composer
+    docker_contents.append('RUN apt-get -qq install -qq -y libcurl4-openssl-dev')  # for curl
+    docker_contents.append('RUN apt-get -qq install -qq -y libicu-dev')  # for intl
+
+    # installs user-specified packages
+    packages = os.getenv('PACKAGES', '')
+    if len(os.getenv('PACKAGES', '')) > 0:
+        packages = packages.split(',')
+        docker_contents.append('RUN apt-get -qq install -qq -y {0}'.format(' '.join(packages)))
+
+    for extension in extensions:
+        if extension in available_extensions:
+            docker_contents.append('RUN docker-php-ext-install {0}'.format(extension))
+        else:
+            docker_contents.append('RUN apt-get -qq install -qq -y php5-{0} && pecl install -o -f {0} && \\'.format(extension))
+            docker_contents.append('    rm -rf /tmp/pear && \\')
+            if extension == 'xdebug':
+                docker_contents.append('    echo "zend_extension=/usr/local/lib/php/extensions/no-debug-non-zts-20100525/xdebug.so" > /usr/local/etc/php/conf.d/{0}.ini'.format(extension))
+            else:
+                docker_contents.append('    echo "extension={0}.so" > /usr/local/etc/php/conf.d/{0}.ini'.format(extension))
+
+    # ensure we have all the proper php testing stuff
+    docker_contents.append('RUN \\')
+    docker_contents.append('    curl -sS https://phar.phpunit.de/phpunit-old.phar > phpunit.phar && \\')
+    docker_contents.append('    curl -sS https://getcomposer.org/installer | php && \\')
+    docker_contents.append('    mv composer.phar /usr/local/bin/composer && \\')
+    docker_contents.append('    mv phpunit.phar /usr/local/bin/phpunit && \\')
+    docker_contents.append('    chmod +x /usr/local/bin/composer /usr/local/bin/phpunit && \\')
+    docker_contents.append('    phpunit --version')
+
+    # set the environment
+    environments = data.get('env', {'matrix': 'CI=1'}).get('matrix', [])
+    docker_env = environments[0]
+    docker_contents.append('ENV {0}'.format(docker_env))
+
+    docker_contents.append('ADD composer.json /app/composer.json')
+    docker_contents.append('WORKDIR /app')
+    docker_contents.append('RUN echo "date.timezone = UTC" > /usr/local/etc/php/conf.d/timezone.ini')
+
+    for script in data.get('before_script', []):
+        docker_contents.append('RUN {0}'.format(script))
+
+    docker_contents.append('ADD . /app')
+
+    # HACK
+    docker_contents.append('ENV COVERALLS=1 DEFAULT=1 PHPCS=1')
+
+    for script in data.get('script', []):
+        docker_contents.append('RUN {0}'.format(script))
+
+    with open('{0}/Dockerfile'.format(os.getcwd()), 'w') as f:
+        for line in docker_contents:
+            f.write("{0}\n\n".format(line))
+
+if __name__ == "__main__":
+    main()
