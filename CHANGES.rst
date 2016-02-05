@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.2.0 (2016-02-05)
+------------------
+
+- Move list of zend extensions to constant. [Jose Diaz-Gonzalez]
+
+- Use proper path for zend extensions. [Jose Diaz-Gonzalez]
+
 0.1.0 (2016-02-05)
 ------------------
 
