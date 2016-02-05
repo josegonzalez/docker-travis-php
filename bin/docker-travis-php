@@ -7,15 +7,16 @@ import yaml
 DEFAULT_VERSION = 5.4
 
 available_extensions = [
-    'bcmath', 'bz2', 'calendar', 'ctype', 'curl', 'dba', 'dom', 'enchant', 'exif',
-    'fileinfo', 'filter', 'ftp', 'gd', 'gettext', 'gmp', 'hash', 'iconv', 'imap',
-    'interbase', 'intl', 'json', 'ldap', 'mbstring', 'mcrypt', 'mssql', 'mysql',
-    'mysqli', 'oci8', 'odbc', 'pcntl', 'pdo', 'pdo_dblib', 'pdo_firebird',
-    'pdo_mysql', 'pdo_oci', 'pdo_odbc', 'pdo_pgsql', 'pdo_sqlite', 'pgsql', 'phar',
-    'posix', 'pspell', 'readline', 'recode', 'reflection', 'session', 'shmop',
-    'simplexml', 'snmp', 'soap', 'sockets', 'spl', 'standard', 'sybase_ct',
-    'sysvmsg', 'sysvsem', 'sysvshm', 'tidy', 'tokenizer', 'wddx', 'xml',
-    'xmlreader', 'xmlrpc', 'xmlwriter', 'xsl', 'zip',
+    'bcmath', 'bz2', 'calendar', 'ctype', 'curl', 'dba', 'dom', 'enchant',
+    'exif', 'fileinfo', 'filter', 'ftp', 'gd', 'gettext', 'gmp', 'hash',
+    'iconv', 'imap', 'interbase', 'intl', 'json', 'ldap', 'mbstring', 'mcrypt',
+    'mssql', 'mysql', 'mysqli', 'oci8', 'odbc', 'pcntl', 'pdo', 'pdo_dblib',
+    'pdo_firebird', 'pdo_mysql', 'pdo_oci', 'pdo_odbc', 'pdo_pgsql',
+    'pdo_sqlite', 'pgsql', 'phar', 'posix', 'pspell', 'readline', 'recode',
+    'reflection', 'session', 'shmop', 'simplexml', 'snmp', 'soap', 'sockets',
+    'spl', 'standard', 'sybase_ct', 'sysvmsg', 'sysvsem', 'sysvshm', 'tidy',
+    'tokenizer', 'wddx', 'xml', 'xmlreader', 'xmlrpc', 'xmlwriter', 'xsl',
+    'zip',
 ]
 
 
@@ -42,22 +43,31 @@ def main():
     docker_contents.append('FROM php:{0}'.format(php_version))
 
     # ensure all the php shit exists
-    docker_contents.append('ENV DEBIAN_FRONTEND=noninteractive LC_ALL=C DOCKER=1')  # LC_ALL=en_US.UTF-8
+
+    # LC_ALL=en_US.UTF-8
+    docker_contents.append('ENV DEBIAN_FRONTEND=noninteractive LC_ALL=C DOCKER=1')  # noqa
     docker_contents.append('RUN apt-get update')
     docker_contents.append('RUN apt-get -qq install -qq -y php5-cli php-pear')
-    docker_contents.append('RUN apt-get -qq install -qq -y git-core')  # for composer
-    docker_contents.append('RUN apt-get -qq install -qq -y libcurl4-openssl-dev')  # for curl
-    docker_contents.append('RUN apt-get -qq install -qq -y libicu-dev')  # for intl
+    # for composer
+    docker_contents.append('RUN apt-get -qq install -qq -y git-core')
+    # for curl
+    docker_contents.append('RUN apt-get -qq install -qq -y libcurl4-openssl-dev')
+    # for intl
+    docker_contents.append('RUN apt-get -qq install -qq -y libicu-dev')
 
     # installs user-specified packages
     packages = os.getenv('PACKAGES', '')
     if len(os.getenv('PACKAGES', '')) > 0:
         packages = packages.split(',')
-        docker_contents.append('RUN apt-get -qq install -qq -y {0}'.format(' '.join(packages)))
+        docker_contents.append('RUN apt-get -qq install -qq -y {0}'.format(
+            ' '.join(packages)
+        ))
 
     for extension in extensions:
         if extension in available_extensions:
-            docker_contents.append('RUN docker-php-ext-install {0}'.format(extension))
+            docker_contents.append('RUN docker-php-ext-install {0}'.format(
+                extension
+            ))
         else:
             docker_contents.append('RUN apt-get -qq install -qq -y php5-{0} && pecl install -o -f {0} && \\'.format(extension))
             docker_contents.append('    rm -rf /tmp/pear && \\')
@@ -82,7 +92,7 @@ def main():
 
     docker_contents.append('ADD composer.json /app/composer.json')
     docker_contents.append('WORKDIR /app')
-    docker_contents.append('RUN echo "date.timezone = UTC" > /usr/local/etc/php/conf.d/timezone.ini')
+    docker_contents.append('RUN echo "date.timezone = UTC" > /usr/local/etc/php/conf.d/timezone.ini')  # noqa
 
     for script in data.get('before_script', []):
         docker_contents.append('RUN {0}'.format(script))
