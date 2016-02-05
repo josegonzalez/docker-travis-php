@@ -78,7 +78,7 @@ def main():
 
     # ensure we have all the proper php testing stuff
     docker_contents.append('RUN \\')
-    docker_contents.append('    curl -sS https://phar.phpunit.de/phpunit-old.phar > phpunit.phar && \\')
+    docker_contents.append('    curl -sSL https://phar.phpunit.de/phpunit-old.phar > phpunit.phar && \\')
     docker_contents.append('    curl -sS https://getcomposer.org/installer | php && \\')
     docker_contents.append('    mv composer.phar /usr/local/bin/composer && \\')
     docker_contents.append('    mv phpunit.phar /usr/local/bin/phpunit && \\')
