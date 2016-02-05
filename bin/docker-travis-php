@@ -5,6 +5,7 @@ import os
 import yaml
 
 DEFAULT_VERSION = 5.4
+DEFAULT_EXTENSIONS = 'curl,intl,mbstring,mysql,redis,xdebug'
 
 available_extensions = [
     'bcmath', 'bz2', 'calendar', 'ctype', 'curl', 'dba', 'dom', 'enchant',
@@ -32,7 +33,7 @@ def main():
     Shits out a simple dockerfile for cakephp
     projects based upon a .travis.yml
     """
-    extensions = os.getenv('EXTENSIONS', 'curl,intl,mbstring,mysql,redis,xdebug').split(',')
+    extensions = os.getenv('EXTENSIONS', DEFAULT_EXTENSIONS).split(',')
     docker_contents = []
     contents = travis_contents()
     data = yaml.safe_load(contents)
