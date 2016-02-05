@@ -20,6 +20,14 @@ available_extensions = [
     'zip',
 ]
 
+phpextension_paths = {
+    5.3: '20090626',
+    5.4: '20100525',
+    5.5: '20121212',
+    5.6: '20131226',
+    7.0: '20151012',
+}
+
 
 def travis_contents():
     with open('{0}/.travis.yml'.format(os.getcwd())) as f:
@@ -72,8 +80,11 @@ def main():
         else:
             docker_contents.append('RUN apt-get -qq install -qq -y php5-{0} && pecl install -o -f {0} && \\'.format(extension))
             docker_contents.append('    rm -rf /tmp/pear && \\')
-            if extension == 'xdebug':
-                docker_contents.append('    echo "zend_extension=/usr/local/lib/php/extensions/no-debug-non-zts-20100525/xdebug.so" > /usr/local/etc/php/conf.d/{0}.ini'.format(extension))
+            if extension in ['xdebug']:
+                docker_contents.append('    echo "zend_extension=/usr/local/lib/php/extensions/no-debug-non-zts-{0}/xdebug.so" > /usr/local/etc/php/conf.d/{1}.ini'.format(
+                    phpextension_paths[php_version],
+                    extension
+                ))
             else:
                 docker_contents.append('    echo "extension={0}.so" > /usr/local/etc/php/conf.d/{0}.ini'.format(extension))
 
