@@ -43,6 +43,7 @@ def main():
     projects based upon a .travis.yml
     """
     extensions = os.getenv('EXTENSIONS', DEFAULT_EXTENSIONS).split(',')
+    extensions.sort()
     docker_contents = []
     contents = travis_contents()
     data = yaml.safe_load(contents)
