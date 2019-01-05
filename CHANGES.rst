@@ -1,6 +1,21 @@
 Changelog
 =========
 
+0.2.1 (2019-01-05)
+------------------
+
+Fix
+~~~
+
+- Support newer git in release script. [Jose Diaz-Gonzalez]
+
+Other
+~~~~~
+
+- Chore: update python requirements. [Jose Diaz-Gonzalez]
+
+- Feat: ensure extensions are sorted. [Jose Diaz-Gonzalez]
+
 0.2.0 (2016-02-05)
 ------------------
 
